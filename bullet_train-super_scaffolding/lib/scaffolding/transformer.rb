@@ -1035,7 +1035,7 @@ class Scaffolding::Transformer
         if attribute.type == "file_field"
           jbuilder_content = if attribute.is_multiple?
             <<~RUBY
-              json.#{attribute.name} do 
+              json.#{attribute.name} do
                 json.array! tangible_thing.#{attribute.name}.map { |file| url_for(file)  }
               end if tangible_thing.#{attribute.name}.attached?
             RUBY
@@ -1237,7 +1237,7 @@ class Scaffolding::Transformer
 
               def #{attribute.name}=(attachables)
                 attachables = Array(attachables).compact_blank
-            
+
                 if attachables.any?
                   attachment_changes["#{attribute.name}"] =
                     ActiveStorage::Attached::Changes::CreateMany.new("#{attribute.name}", self, #{attribute.name}.blobs + attachables)
@@ -1453,12 +1453,13 @@ class Scaffolding::Transformer
       scaffold_replace_line_in_file("./app/views/account/scaffolding/completely_concrete/tangible_things/_index.html.erb", transform_string("<tbody data-controller=\"sortable\" data-sortable-reorder-path-value=\"<%= url_for [:reorder, :account, context, collection] %>\">"), "<tbody>")
 
       unless cli_options["skip-model"]
+        current_transformer = Scaffolding::ClassNamesTransformer.new(child, parent, namespace)
         scaffold_add_line_to_file("./app/models/scaffolding/completely_concrete/tangible_thing.rb", "def collection\n  absolutely_abstract_creative_concept.completely_concrete_tangible_things\nend\n\n", METHODS_HOOK, prepend: true)
         scaffold_add_line_to_file("./app/models/scaffolding/completely_concrete/tangible_thing.rb", "include Sortable\n", CONCERNS_HOOK, prepend: true)
 
         migration = Dir.glob("db/migrate/*").last
         migration_lines = File.open(migration).readlines
-        parent_line_idx = Scaffolding::FileManipulator.find(migration_lines, "t.references :#{parent.underscore}")
+        parent_line_idx = Scaffolding::FileManipulator.find(migration_lines, /t\.references.*#{current_transformer.parent_table_name}/)
         new_lines = Scaffolding::BlockManipulator.insert_line("t.integer :sort_order", parent_line_idx, migration_lines, false)
         Scaffolding::FileManipulator.write(migration, new_lines)
       end
